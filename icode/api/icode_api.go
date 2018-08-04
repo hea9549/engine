@@ -18,18 +18,25 @@ package api
 
 import (
 	"github.com/it-chain/engine/icode"
+	"context"
+	"time"
+	"github.com/it-chain/engine/common/logger"
 )
 
 type ICodeApi struct {
 	ContainerService icode.ContainerService
 	GitService       icode.GitService
+	Repository       *icode.MetaRepository
+	EventService     icode.EventService
 }
 
-func NewIcodeApi(containerService icode.ContainerService, gitService icode.GitService) *ICodeApi {
+func NewIcodeApi(containerService icode.ContainerService, gitService icode.GitService, repository *icode.MetaRepository, eventService icode.EventService) *ICodeApi {
 
 	return &ICodeApi{
 		ContainerService: containerService,
 		GitService:       gitService,
+		Repository:       repository,
+		EventService:     eventService,
 	}
 }
 
@@ -47,6 +54,9 @@ func (i ICodeApi) Deploy(id string, baseSaveUrl string, gitUrl string, sshPath s
 		return nil, err
 	}
 
+	i.Repository.Save(meta)
+	i.EventService.MetaCreated(*meta)
+
 	return meta, nil
 }
 
@@ -57,38 +67,45 @@ func (i ICodeApi) UnDeploy(id icode.ID) error {
 		return err
 	}
 
-	// publish meta delete event
-	err = icode.DeleteMeta(id)
-	if err != nil {
-		return err
-	}
+	i.Repository.Delete(id)
+	i.EventService.MetaDeleted(id)
 
 	return nil
 }
 
-func (i ICodeApi) ExecuteTransactionList(RequestList []icode.Request) []icode.Result {
+func (i ICodeApi) ExecuteTransactionList(RequestList []icode.Request) []*icode.Result {
 
-	resultList := make([]icode.Result, 0)
+	resultList := make([]*icode.Result, 0)
 
 	for _, transaction := range RequestList {
-		result := i.ExecuteRequest(transaction)
-		resultList = append(resultList, result)
+		result,err := i.ExecuteRequest(transaction)
+		if err != nil{
+			resultList = append(resultList, result)
+		}
 	}
 
 	return resultList
 }
 
-func (i ICodeApi) ExecuteRequest(request icode.Request) icode.Result {
-
-	result, err := i.ContainerService.ExecuteRequest(request)
+func (i ICodeApi) ExecuteRequest(request icode.Request) (*icode.Result, error) {
+	//todo request timeout setting by outside
+	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
+	c := make(chan *icode.Result, 1)
+	err := i.ContainerService.ExecuteRequest(request, func(result *icode.Result, err error) {
+		logger.Error(nil, "error in execute request response : "+err.Error())
+		c <- result
+	})
 
 	if err != nil {
-		result = &icode.Result{
-			Data:    nil,
-			Success: false,
-			Err:     err.Error(),
-		}
+		logger.Error(nil, "error in execute request : "+err.Error())
+		return nil, err
 	}
 
-	return *result
+	select {
+	case <-ctx.Done():
+		logger.Error(nil, "error in execute request, timeout : "+ctx.Err().Error())
+		return nil, ctx.Err()
+	case result := <-c:
+		return result, nil
+	}
 }

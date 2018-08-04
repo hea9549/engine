@@ -39,7 +39,7 @@ func (d *DeployCommandHandler) HandleDeployCommand(deployCommand command.Deploy)
 
 	savePath := os.Getenv("GOPATH") + "/src/github.com/it-chain/engine/.tmp/"
 
-	meta, err := d.icodeApi.Deploy(deployCommand.GetID(), savePath, deployCommand.Url, deployCommand.SshPath)
+	meta, err := d.icodeApi.Deploy(deployCommand.ICodeId, savePath, deployCommand.Url, deployCommand.SshPath)
 
 	if err != nil {
 		return icode.Meta{}, rpc.Error{Message: err.Error()}

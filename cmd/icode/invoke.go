@@ -59,7 +59,7 @@ func invoke(id string, functionName string, args []string) {
 
 	defer client.Close()
 
-	invokeCommand := command.ExecuteICode{
+	invokeCommand := command.ExecuteRequest{
 		CommandModel: midgard.CommandModel{
 			ID: id,
 		},

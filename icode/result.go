@@ -17,10 +17,9 @@
 package icode
 
 type Result struct {
-	Data    map[key]value
-	Success bool
-	Err     string
+	Uuid   string
+	Type   string
+	Result bool
+	Data   []byte
+	Error  string
 }
-
-type key = string
-type value = string

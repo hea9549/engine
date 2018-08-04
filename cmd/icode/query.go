@@ -56,7 +56,7 @@ func query(id string, functionName string, args []string) {
 
 	defer client.Close()
 
-	queryCommand := command.ExecuteICode{
+	queryCommand := command.ExecuteRequest{
 		CommandModel: midgard.CommandModel{
 			ID: id,
 		},

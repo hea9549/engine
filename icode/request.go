@@ -16,16 +16,32 @@
 
 package icode
 
+import "github.com/rs/xid"
+
 type Request struct {
+	Uuid     string
 	ICodeID  string
 	Function string
 	Args     []string
+	Type     string
 }
 
-type Invoke struct {
-	Request
+func NewInvoke(txId string,icodeId string, function string,args []string) *Request {
+	return &Request{
+		Uuid:     txId,
+		ICodeID:  icodeId,
+		Function: function,
+		Args:     args,
+		Type:     "invoke",
+	}
 }
 
-type Query struct {
-	Request
+func NewQuery(icodeId string, function string,args []string) *Request {
+	return &Request{
+		Uuid:     xid.New().String(),
+		ICodeID:  icodeId,
+		Function: function,
+		Args:     args,
+		Type:     "query",
+	}
 }

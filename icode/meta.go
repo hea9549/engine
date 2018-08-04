@@ -16,16 +16,7 @@
 
 package icode
 
-import (
-	"errors"
-	"fmt"
-
-	"time"
-
-	"github.com/it-chain/engine/common/event"
-	"github.com/it-chain/engine/core/eventstore"
-	"github.com/it-chain/midgard"
-)
+import "errors"
 
 type Version struct {
 }
@@ -51,63 +42,44 @@ type Meta struct {
 }
 
 func NewMeta(id string, repositoryName string, gitUrl string, path string, commitHash string) *Meta {
-	createEvent := event.MetaCreated{
-		EventModel: midgard.EventModel{
-			ID:   id,
-			Type: "meta.created",
-		},
+	return &Meta{
+		ICodeID:        id,
 		RepositoryName: repositoryName,
 		GitUrl:         gitUrl,
 		Path:           path,
 		CommitHash:     commitHash,
+		Version:        Version{},
+		Status:         0,
 	}
-	eventstore.Save(createEvent.GetID(), createEvent)
-	m := Meta{}
-	m.On(&createEvent)
-	return &m
 }
-
-func DeleteMeta(metaId ID) error {
-	return eventstore.Save(metaId, event.MetaDeleted{
-		EventModel: midgard.EventModel{
-			ID:   metaId,
-			Type: "meta.deleted",
-		},
-	})
-}
-
-func ChangeMetaStatus(metaId ID, status MetaStatus) error {
-	return eventstore.Save(metaId, event.MetaStatusChanged{
-		EventModel: midgard.EventModel{
-			ID:   metaId,
-			Type: "meta.statusChange",
-			Time: time.Now(),
-		},
-		Status: DEPLOYED,
-	})
-}
-
 func (m Meta) GetID() string {
 	return m.ICodeID
 }
 
-func (m *Meta) On(metaEvent midgard.Event) error {
-	switch v := metaEvent.(type) {
-	case *event.MetaCreated:
-		m.CommitHash = v.CommitHash
-		m.Version = v.Version
-		m.Path = v.Path
-		m.GitUrl = v.GitUrl
-		m.ICodeID = v.ID
-		m.RepositoryName = v.RepositoryName
-		m.Status = READY
-	case *event.MetaDeleted:
-		m.Status = UNDEPLOYED
-	case *event.MetaStatusChanged:
-		m.Status = v.Status
-	default:
-		return errors.New(fmt.Sprintf("unhandled event [%s]", v))
-	}
+type MetaRepository struct {
+	metas map[ID]*Meta
+}
 
+func NewMetaRepository() *MetaRepository {
+	return &MetaRepository{
+		metas:        make(map[ID]*Meta),
+	}
+}
+
+func (mr *MetaRepository) Save(meta *Meta) {
+	mr.metas[meta.GetID()]=meta
+}
+
+func (mr *MetaRepository) Delete(id ID) {
+	delete(mr.metas, id)
+}
+
+func (mr *MetaRepository) StatusChanged(id ID,status MetaStatus) error {
+	meta := mr.metas[id]
+	if meta==nil {
+		return errors.New("no meta with ID : "+id)
+	}
+	meta.Status = status
+	mr.Save(meta)
 	return nil
 }

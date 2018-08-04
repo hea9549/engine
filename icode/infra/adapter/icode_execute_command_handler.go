@@ -33,15 +33,19 @@ func NewIcodeExecuteCommandHandler(icodeApi api.ICodeApi) IcodeExecuteCommandHan
 	}
 }
 
-func (i *IcodeExecuteCommandHandler) HandleTransactionExecuteCommandHandler(command command.ExecuteICode) (icode.Result, rpc.Error) {
+func (i *IcodeExecuteCommandHandler) HandleTransactionExecuteCommandHandler(command command.ExecuteRequest) (icode.Result, rpc.Error) {
 
 	request := icode.Request{
 		Args:     command.Args,
 		Function: command.Function,
-		ICodeID:  command.ID,
+		ICodeID:  command.ICodeId,
 	}
 
-	result := i.iCodeApi.ExecuteRequest(request)
-
-	return result, rpc.Error{}
+	result,err := i.iCodeApi.ExecuteRequest(request)
+	if err !=nil{
+		return icode.Result{},rpc.Error{
+			Message: err.Error(),
+		}
+	}
+	return *result, rpc.Error{}
 }

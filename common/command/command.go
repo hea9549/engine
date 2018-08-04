@@ -88,20 +88,20 @@ type ReceiveGrpc struct {
 /*
  * icode
  */
-type ExecuteICode struct {
-	midgard.CommandModel
+type ExecuteRequest struct {
+	ICodeId string
 	Function string
 	Args     []string
 	Method   string
 }
 
 type Deploy struct {
-	midgard.CommandModel
+	ICodeId string
 	Url     string
 	SshPath string
 }
 type UnDeploy struct {
-	midgard.CommandModel
+	ICodeId string
 }
 
 /*

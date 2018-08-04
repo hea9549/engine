@@ -20,14 +20,9 @@ import (
 	"errors"
 	"fmt"
 
-	"encoding/json"
-
-	"github.com/it-chain/engine/common/event"
-	"github.com/it-chain/engine/core/eventstore"
-	"github.com/it-chain/engine/icode"
-	"github.com/it-chain/midgard"
+				"github.com/it-chain/engine/icode"
 	"github.com/it-chain/tesseract"
-	"github.com/it-chain/tesseract/cellcode/cell"
+		"github.com/it-chain/tesseract/pb"
 )
 
 type TesseractContainerService struct {
@@ -35,9 +30,9 @@ type TesseractContainerService struct {
 	containerIdMap map[icode.ID]string // key : iCodeId, value : containerId
 }
 
-func NewTesseractContainerService(config tesseract.Config) *TesseractContainerService {
+func NewTesseractContainerService() *TesseractContainerService {
 	tesseractObj := &TesseractContainerService{
-		tesseract:      tesseract.New(config),
+		tesseract:      tesseract.New(),
 		containerIdMap: make(map[icode.ID]string, 0),
 	}
 	return tesseractObj
@@ -53,62 +48,47 @@ func (cs TesseractContainerService) StartContainer(meta icode.Meta) error {
 	containerId, err := cs.tesseract.SetupContainer(tesseractIcodeInfo)
 
 	if err != nil {
-		icode.ChangeMetaStatus(meta.GetID(), icode.DEPLOY_FAIL)
 		return err
 	}
 
 	cs.containerIdMap[meta.ICodeID] = containerId
-	icode.ChangeMetaStatus(meta.GetID(), icode.DEPLOYED)
 
 	return nil
 }
 
-func (cs TesseractContainerService) ExecuteRequest(request icode.Request) (*icode.Result, error) {
+func (cs TesseractContainerService) ExecuteRequest(request icode.Request,callback func (result *icode.Result, err error)) error {
 
 	containerId, found := cs.containerIdMap[request.ICodeID]
 
 	if !found {
-		return nil, errors.New(fmt.Sprintf("no container for iCode : %s", request.ICodeID))
+		return errors.New(fmt.Sprintf("no container for iCode : %s", request.ICodeID))
 	}
 
-	tesseractTxInfo := cell.TxInfo{
-		ID: request.ICodeID,
-		Params: cell.Params{
-			Function: request.Function,
-			Args:     request.Args,
-		},
+	tesseractReq := tesseract.Request{
+		Uuid:     request.Uuid,
+		TypeName: request.Type,
+		FuncName: request.Function,
+		Args:     request.Args,
 	}
 
-	res, err := cs.tesseract.QueryOrInvoke(containerId, tesseractTxInfo)
+	tesseractCallBack := func(tesRes *pb.Response,err error) {
+		icodeResult := icode.Result{
+			Uuid:   tesRes.Uuid,
+			Type:   tesRes.Type,
+			Result: tesRes.Result,
+			Data:   tesRes.Data,
+			Error:  tesRes.Error,
+		}
+		callback(&icodeResult,err)
+	}
+
+	err := cs.tesseract.Request(containerId, tesseractReq,tesseractCallBack)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var data = make(map[string]string)
-	var isSuccess bool
-
-	switch res.Result {
-	case "Success":
-		isSuccess = true
-		err = json.Unmarshal(res.Data, &data)
-		if err != nil {
-			return nil, err
-		}
-
-	case "Error":
-		isSuccess = false
-		data = nil
-	default:
-		return nil, errors.New(fmt.Sprintf("Unknown pb response result %s", res.Result))
-	}
-
-	result := &icode.Result{
-		Data:    data,
-		Success: isSuccess,
-	}
-
-	return result, nil
+	return nil
 }
 
 func (cs TesseractContainerService) StopContainer(id icode.ID) error {
@@ -121,11 +101,5 @@ func (cs TesseractContainerService) StopContainer(id icode.ID) error {
 		return err
 	}
 	delete(cs.containerIdMap, id)
-	deletedEvent := event.MetaDeleted{
-		EventModel: midgard.EventModel{
-			ID:   id,
-			Type: "meta.deleted",
-		},
-	}
-	return eventstore.Save(id, deletedEvent)
+	return nil
 }

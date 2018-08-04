@@ -19,10 +19,16 @@ package icode
 type ContainerService interface {
 	StartContainer(meta Meta) error
 	StopContainer(id ID) error
-	ExecuteRequest(request Request) (*Result, error)
+	ExecuteRequest(request Request,callback func(result *Result,err error)) error
 }
 
 type GitService interface {
 	//clone code from deploy info
 	Clone(id string, baseSavePath string, repositoryUrl string, sshPath string) (*Meta, error)
+}
+
+type EventService interface {
+	MetaCreated(meta Meta)
+	MetaDeleted(id ID)
+	MetaStateChanged(id ID,status MetaStatus)
 }
