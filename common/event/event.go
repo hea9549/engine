@@ -79,7 +79,7 @@ type BlockSaved struct {
 
 // icode meta 생성
 type MetaCreated struct {
-	midgard.EventModel
+	ID             string
 	RepositoryName string
 	GitUrl         string
 	Path           string

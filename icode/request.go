@@ -26,8 +26,8 @@ type Request struct {
 	Type     string
 }
 
-func NewInvoke(txId string,icodeId string, function string,args []string) *Request {
-	return &Request{
+func NewInvoke(txId string,icodeId string, function string,args []string) Request {
+	return Request{
 		Uuid:     txId,
 		ICodeID:  icodeId,
 		Function: function,
@@ -36,8 +36,8 @@ func NewInvoke(txId string,icodeId string, function string,args []string) *Reque
 	}
 }
 
-func NewQuery(icodeId string, function string,args []string) *Request {
-	return &Request{
+func NewQuery(icodeId string, function string,args []string) Request {
+	return Request{
 		Uuid:     xid.New().String(),
 		ICodeID:  icodeId,
 		Function: function,

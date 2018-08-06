@@ -35,15 +35,15 @@ func NewIcodeExecuteCommandHandler(icodeApi api.ICodeApi) IcodeExecuteCommandHan
 
 func (i *IcodeExecuteCommandHandler) HandleTransactionExecuteCommandHandler(command command.ExecuteRequest) (icode.Result, rpc.Error) {
 
-	request := icode.Request{
-		Args:     command.Args,
-		Function: command.Function,
-		ICodeID:  command.ICodeId,
+	var request icode.Request
+	if command.Method == "invoke" {
+		request = icode.NewInvoke(command.TxId, command.ICodeId, command.Function, command.Args)
+	} else if command.Method == "query" {
+		request = icode.NewQuery(command.ICodeId, command.Function, command.Args)
 	}
-
-	result,err := i.iCodeApi.ExecuteRequest(request)
-	if err !=nil{
-		return icode.Result{},rpc.Error{
+	result, err := i.iCodeApi.ExecuteRequest(request)
+	if err != nil {
+		return icode.Result{}, rpc.Error{
 			Message: err.Error(),
 		}
 	}

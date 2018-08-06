@@ -89,7 +89,8 @@ type ReceiveGrpc struct {
  * icode
  */
 type ExecuteRequest struct {
-	ICodeId string
+	TxId     string
+	ICodeId  string
 	Function string
 	Args     []string
 	Method   string
