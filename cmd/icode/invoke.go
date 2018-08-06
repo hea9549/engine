@@ -24,7 +24,6 @@ import (
 	"github.com/it-chain/engine/common/rabbitmq/rpc"
 	"github.com/it-chain/engine/conf"
 	"github.com/it-chain/engine/icode"
-	"github.com/it-chain/midgard"
 	"github.com/urfave/cli"
 )
 
@@ -60,11 +59,10 @@ func invoke(id string, functionName string, args []string) {
 	defer client.Close()
 
 	invokeCommand := command.ExecuteRequest{
-		CommandModel: midgard.CommandModel{
-			ID: id,
-		},
+		ICodeId:  id,
 		Function: functionName,
 		Args:     args,
+		Method:   "invoke",
 	}
 
 	logger.Info(nil, "invoke icode ...")
@@ -83,11 +81,9 @@ func invoke(id string, functionName string, args []string) {
 			logger.Infof(nil, "%15s : [%s]", "arg"+string(i), arg)
 		}
 
-		logger.Infof(nil, "%15s : %t", "success", result.Success)
+		logger.Infof(nil, "%15s : %t", "success", result.Result)
 
-		for key, val := range result.Data {
-			logger.Infof(nil, "%s : %s", "[result]"+key, val)
-		}
+		logger.Infof(nil, "%s : %s", "[result]"+string(result.Data))
 	})
 
 	if err != nil {

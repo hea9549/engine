@@ -44,8 +44,8 @@ import (
 	txpoolAdapter "github.com/it-chain/engine/txpool/infra/adapter"
 	txpoolBatch "github.com/it-chain/engine/txpool/infra/batch"
 	"github.com/it-chain/engine/txpool/infra/mem"
-	"github.com/it-chain/tesseract"
 	"github.com/urfave/cli"
+	icode2 "github.com/it-chain/engine/icode"
 )
 
 func PrintLogo() {
@@ -209,11 +209,11 @@ func initIcode() error {
 
 	// git generate
 	storeApi := icodeInfra.NewRepositoryService()
-	defaultScriptPath := os.Getenv("GOPATH") + "/src/github.com/it-chain/engine/icode/default_setup.sh"
-	containerService := icodeService.NewTesseractContainerService(tesseract.Config{
-		ShPath: defaultScriptPath,
-	})
-	api := icodeApi.NewIcodeApi(containerService, storeApi)
+	containerService := icodeService.NewTesseractContainerService()
+	metaRepository := icode2.NewMetaRepository()
+	p := pubsub.NewTopicPublisher(config.Engine.Amqp, "event")
+	metaEventService := icodeService.NewMQEventService(p.Publish)
+	api := icodeApi.NewIcodeApi(containerService, storeApi, metaRepository, metaEventService)
 
 	// handler generate
 	deployHandler := icodeAdapter.NewDeployCommandHandler(*api)
