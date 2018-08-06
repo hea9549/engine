@@ -92,7 +92,9 @@ func (i ICodeApi) ExecuteRequest(request icode.Request) (*icode.Result, error) {
 	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
 	c := make(chan *icode.Result, 1)
 	err := i.ContainerService.ExecuteRequest(request, func(result *icode.Result, err error) {
-		logger.Error(nil, "error in execute request response : "+err.Error())
+		if err!=nil{
+			logger.Error(nil, "error in execute request response : "+err.Error())
+		}
 		c <- result
 	})
 

@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 
-				"github.com/it-chain/engine/icode"
+	"github.com/it-chain/engine/icode"
 	"github.com/it-chain/tesseract"
-		"github.com/it-chain/tesseract/pb"
+	"github.com/it-chain/tesseract/pb"
 )
 
 type TesseractContainerService struct {
@@ -56,7 +56,7 @@ func (cs TesseractContainerService) StartContainer(meta icode.Meta) error {
 	return nil
 }
 
-func (cs TesseractContainerService) ExecuteRequest(request icode.Request,callback func (result *icode.Result, err error)) error {
+func (cs TesseractContainerService) ExecuteRequest(request icode.Request, callback func(result *icode.Result, err error)) error {
 
 	containerId, found := cs.containerIdMap[request.ICodeID]
 
@@ -71,7 +71,7 @@ func (cs TesseractContainerService) ExecuteRequest(request icode.Request,callbac
 		Args:     request.Args,
 	}
 
-	tesseractCallBack := func(tesRes *pb.Response,err error) {
+	tesseractCallBack := func(tesRes *pb.Response, err error) {
 		icodeResult := icode.Result{
 			Uuid:   tesRes.Uuid,
 			Type:   tesRes.Type,
@@ -79,10 +79,10 @@ func (cs TesseractContainerService) ExecuteRequest(request icode.Request,callbac
 			Data:   tesRes.Data,
 			Error:  tesRes.Error,
 		}
-		callback(&icodeResult,err)
+		callback(&icodeResult, err)
 	}
 
-	err := cs.tesseract.Request(containerId, tesseractReq,tesseractCallBack)
+	err := cs.tesseract.Request(containerId, tesseractReq, tesseractCallBack)
 
 	if err != nil {
 		return err
